@@ -1,5 +1,9 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.Experimental.XR;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /* アプリ全体の初期化やフェーズ管理を行う */
 public class AppManager : MonoBehaviour{
@@ -36,6 +40,49 @@ public class AppManager : MonoBehaviour{
 #endif
 
 
+    public ARRaycastManager arRaycast;
+    public Animator overlayCanvasAnim;
+    public CharacterManager charaManager;
+    public Text debugText;
+    public Camera cam;
+    public Transform camPosition;
+    private Task nowTask;
+    private bool touchActive = false;
 
+
+    public void SetNowTask(Task newTask) {
+        nowTask = newTask;
+    }
+
+    void Start() {
+        nowTask = new CreateCharacterTask(this, arRaycast, charaManager, overlayCanvasAnim);
+    }
+
+    void Update() {
+        try {
+            nowTask.DoUpdateFunc();
+        }catch(Exception e) {
+            debugText.text = "Error Update: " + e.Message + "\n" + e.StackTrace;
+        }
+
+        if (touchActive && !EventSystem.current.IsPointerOverGameObject(0) && Input.touchCount > 0) {
+            Touch t = Input.GetTouch(0);
+
+            if (t.phase == TouchPhase.Began) {
+                // UI以外をタッチされたとき
+                try {
+                    nowTask.Touched(t.position);
+                } catch (Exception e) {
+                    debugText.text = "Error Touch: " + e.Message + "\n" + e.StackTrace;
+                }
+            }
+        }
+    }
+
+    /* 最初のウィンドウを消してアクティベート */
+    public void TouchActivate() {
+        overlayCanvasAnim.SetTrigger("CautionOK");
+        touchActive = true;
+    }
 
 }
