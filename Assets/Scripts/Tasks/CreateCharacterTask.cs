@@ -21,7 +21,7 @@ public class CreateCharacterTask : Task{
         Vector3 screenSpawnPoint = appManager.cam.ViewportToScreenPoint(new Vector3(0.5f, 0.4f));
         List<ARRaycastHit> hits = new List<ARRaycastHit>();
         
-        if(Time.timeSinceLevelLoad - startTime > 4.0f && arRaycast.Raycast(screenSpawnPoint, hits, UnityEngine.XR.ARSubsystems.TrackableType.Planes)) {
+        if(Time.timeSinceLevelLoad - startTime > 4.0f && arRaycast.Raycast(screenSpawnPoint, hits, UnityEngine.XR.ARSubsystems.TrackableType.PlaneWithinBounds)) {
             charaManager.ActiveRespawn(hits[0].pose.position, Camera.current.transform.forward);
             anim.SetBool("Info", false);
         } else {

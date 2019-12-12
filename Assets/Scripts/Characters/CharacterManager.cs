@@ -9,7 +9,7 @@ using UnityEngine.XR.ARFoundation;
 public class CharacterManager : MonoBehaviour{
     public GameObject respawnObj;
     public GameObject characterObj; //キャラクターのprefab
-    private GameObject controlingCharacterObj;
+    private GameObject controllingCharacterObj = null;
 
     public ARRaycastManager arRaycast;    // レイキャスト用
 
@@ -20,26 +20,26 @@ public class CharacterManager : MonoBehaviour{
     private float pastTime; //前回呼び出された時の時間
     private const float speed = 0.5f;  //キャラクターの時間当たりの速さ
 
+    private int debugCount = 0;
 
     /* 位置は何もしていない時でも地面を認識する可能性があるので常に更新 */
     private void Update() {
         Vector3 rayOrigin = new Vector3(characterPose.position.x, characterPose.position.y + 4.0f, characterPose.position.z);
-        Ray detectPlaneRay = new Ray(rayOrigin, characterPose.position);
+        Ray detectPlaneRay = new Ray(rayOrigin, new Vector3(0, -1, 0));
         List<ARRaycastHit> hits = new List<ARRaycastHit>();
-        if (arRaycast.Raycast(detectPlaneRay, hits, UnityEngine.XR.ARSubsystems.TrackableType.Planes)) {
+        if (arRaycast.Raycast(detectPlaneRay, hits, UnityEngine.XR.ARSubsystems.TrackableType.PlaneWithinBounds)) {
             // hitがあった場合はそれに従って補正
+            UIDebug.Log("ray cast hit : "+debugCount.ToString());
+            debugCount++;
             float div_y = hits[0].pose.position.y - characterPose.position.y;
-
-            //div_zが小さすぎると瞬間移動してしまうので落ちる感じになるように制限
-            if (div_y < -0.3f) {
-                div_y = -0.3f;
-            }
 
             characterPose.position.y += div_y;
         }
 
-        controlingCharacterObj.transform.position = characterPose.position;
-        controlingCharacterObj.transform.rotation = characterPose.rotation;
+        if(controllingCharacterObj != null) {
+            controllingCharacterObj.transform.position = characterPose.position;
+            controllingCharacterObj.transform.rotation = characterPose.rotation;
+        }
     }
 
     public Pose GetCharacterPose() {
@@ -62,8 +62,8 @@ public class CharacterManager : MonoBehaviour{
 
         respawnActive = true;
 
-        if(controlingCharacterObj != null) {
-            controlingCharacterObj.transform.rotation = characterPose.rotation;
+        if(controllingCharacterObj != null) {
+            controllingCharacterObj.transform.rotation = characterPose.rotation;
         }
 
     }
@@ -77,11 +77,11 @@ public class CharacterManager : MonoBehaviour{
     /* キャラクターの生成ができる時trueを返す */
     public bool CreateCharacter() {
         if (respawnActive) {
-            if(controlingCharacterObj != null) {
-                Destroy(controlingCharacterObj);    // 既にでている場合は削除
+            if(controllingCharacterObj != null) {
+                Destroy(controllingCharacterObj);    // 既にでている場合は削除
             }
 
-            controlingCharacterObj = Instantiate(characterObj, characterPose.position, characterPose.rotation);
+            controllingCharacterObj = Instantiate(characterObj, characterPose.position, characterPose.rotation);
             respawnObj.SetActive(false);
         }
 
@@ -129,7 +129,7 @@ public class CharacterManager : MonoBehaviour{
     public void LookAtPlayer(Vector3 cameraDirection) {
         Vector3 cameraBearing = new Vector3(-cameraDirection.x, 0, -cameraDirection.z);
         characterPose.rotation = Quaternion.LookRotation(cameraBearing);
-        controlingCharacterObj.transform.rotation = characterPose.rotation;
+        controllingCharacterObj.transform.rotation = characterPose.rotation;
     }
 
 }
