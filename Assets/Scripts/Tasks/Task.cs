@@ -2,9 +2,8 @@
 using UnityEngine.XR.ARFoundation;
 
 public abstract class Task{
-    protected AppManager appManager;
+    protected ARContentManager arContentManager;
     protected ARRaycastManager arRaycast;
-    protected Animator anim;
     protected CharacterManager charaManager;
 
     public abstract void DoUpdateFunc();

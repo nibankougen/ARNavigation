@@ -473,7 +473,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TechChanA|TechChanWait
+  m_Name: TechChanWaitTrigger
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -490,8 +490,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -4977152498463141617, guid: 0755dc72608c04df58ef7e50036dca9b,
-    type: 3}
+  m_Motion: {fileID: 7400000, guid: fab5b1bdde88341be90fb65354d52def, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -560,7 +559,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TechChanA|TechChanWalkStart
+  m_Name: TechChanWalkStartTrigger
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -574,7 +573,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 504286715073531119, guid: 0755dc72608c04df58ef7e50036dca9b, type: 3}
+  m_Motion: {fileID: 7400000, guid: bb4ac8969f37e45c390c7643f1d99f4d, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -594,7 +593,7 @@ AnimatorStateMachine:
     m_Position: {x: 12, y: 192, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1102308961489973738}
-    m_Position: {x: 336, y: 192, z: 0}
+    m_Position: {x: 340, y: 190, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1102771358590302806}
     m_Position: {x: 216, y: 120, z: 0}
@@ -606,7 +605,7 @@ AnimatorStateMachine:
     m_Position: {x: 480, y: 110, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1102832619543156466}
-    m_Position: {x: 228, y: 288, z: 0}
+    m_Position: {x: 230, y: 290, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1102014723061468528}
     m_Position: {x: 480, y: 288, z: 0}

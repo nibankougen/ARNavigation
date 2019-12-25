@@ -8,7 +8,7 @@ using UnityEngine.XR.ARFoundation;
 /* キャラクターおよびリスポーン地点の位置や動きの管理をする */
 public class CharacterManager : MonoBehaviour{
     public GameObject respawnObj;
-    public GameObject characterObj; //キャラクターのprefab
+    public GameObject[] characterObjects; //キャラクターのprefab
     private GameObject controllingCharacterObj = null;
 
     public ARRaycastManager arRaycast;    // レイキャスト用
@@ -16,24 +16,68 @@ public class CharacterManager : MonoBehaviour{
     private bool respawnActive = false;
 
     private Pose characterPose; // キャラクターの現在位置ただしy座標は補正する場合あり
+    private Vector3 goalPosition;
     private CharacterMotion motion; //キャラクターの動きの管理
     private float pastTime; //前回呼び出された時の時間
-    private const float speed = 0.5f;  //キャラクターの時間当たりの速さ
+    private CharacterMotion nowCharacter;   // 現在のキャラクターのモーションやパラメーターを管理
+    private int characterNum;
+    private bool walk = false;
 
-    private int debugCount = 0;
+    private const float gravityAc = 1f;   // 重力加速度、この加速度に従って上方向に移動する
+    private float moveSpeed_Y = 0f;   // Y方向、上下方向の移動速度
+
+    private void Start() {
+        SetCharacter(0);    // デフォルトでテックちゃんをセット
+    }
+    
 
     /* 位置は何もしていない時でも地面を認識する可能性があるので常に更新 */
-    private void Update() {
+    private void FixedUpdate() {
+        float nowTime = Time.timeSinceLevelLoad;
+        float timeDiv = nowTime - pastTime;
+        pastTime = nowTime;     // もうpastTimeは使わないので時間の更新
+
+        if (walk && nowCharacter.canWalk) {
+            Vector3 direction = goalPosition - characterPose.position;
+            float maxLen = nowCharacter.walkSpeed * timeDiv;    // 移動の最大距離
+
+            if (direction.magnitude > maxLen) {
+                characterPose.position = characterPose.position + (direction.normalized * maxLen);   // 仮の新しい位置
+            } else {
+                //速度よりも小さい時その場所にセットして終了
+                characterPose.position = goalPosition;   // 仮の新しい位置
+
+                //動作終了の処理
+                WalkEnd();
+            }
+
+            /* 以下回転 */
+            direction.y = 0;    // 上下方向には回転しない
+            characterPose.rotation = Quaternion.LookRotation(direction);
+        }
+        
+
+        /* 以下上下移動 */
         Vector3 rayOrigin = new Vector3(characterPose.position.x, characterPose.position.y + 4.0f, characterPose.position.z);
         Ray detectPlaneRay = new Ray(rayOrigin, new Vector3(0, -1, 0));
         List<ARRaycastHit> hits = new List<ARRaycastHit>();
         if (arRaycast.Raycast(detectPlaneRay, hits, UnityEngine.XR.ARSubsystems.TrackableType.PlaneWithinBounds)) {
-            // hitがあった場合はそれに従って補正
-            UIDebug.Log("ray cast hit : "+debugCount.ToString());
-            debugCount++;
             float div_y = hits[0].pose.position.y - characterPose.position.y;
 
+            moveSpeed_Y += gravityAc * timeDiv; // 最高上下移動速度
+
+            if (moveSpeed_Y < div_y) {
+                div_y = moveSpeed_Y;
+            }else if (div_y < -moveSpeed_Y) {
+                div_y = -moveSpeed_Y;
+            } else {
+                //現在の速度で目的の高さまで到達できるので速度初期化
+                moveSpeed_Y = 0f;
+            }
+
             characterPose.position.y += div_y;
+        } else {
+            moveSpeed_Y = 0f;   // 上下方向には動かない
         }
 
         if(controllingCharacterObj != null) {
@@ -44,6 +88,15 @@ public class CharacterManager : MonoBehaviour{
 
     public Pose GetCharacterPose() {
         return characterPose;
+    }
+
+    public bool GetWalk() {
+        return walk;
+    }
+
+    /* 番号に応じてキャラクターをセットする */
+    private void SetCharacter(int newCharacterNum) {
+        characterNum = newCharacterNum;
     }
 
 
@@ -81,7 +134,12 @@ public class CharacterManager : MonoBehaviour{
                 Destroy(controllingCharacterObj);    // 既にでている場合は削除
             }
 
-            controllingCharacterObj = Instantiate(characterObj, characterPose.position, characterPose.rotation);
+            controllingCharacterObj = Instantiate(characterObjects[characterNum], characterPose.position, characterPose.rotation);
+            switch (characterNum) {
+                case 0: // テックちゃん
+                    nowCharacter = controllingCharacterObj.GetComponent<TechChanMotion>();
+                    break;
+            }
             respawnObj.SetActive(false);
         }
 
@@ -92,36 +150,17 @@ public class CharacterManager : MonoBehaviour{
 
     /* NavigationTaskで使用---------------------------------------------- */
     /* 動作開始時の処理 */
-    public void MoveStart() {
-        pastTime = Time.timeSinceLevelLoad;
+    public void WalkStart(Vector3 newGoalPosition) {
+        goalPosition = newGoalPosition;
+        nowCharacter.WalkStart();
+        walk = true;
     }
 
-    /* 位置の更新。基本的には現在位置からtargetPositionの方向に向かってspeedの分移動するが
-     * 地面が認識されている時はその位置を補正する
-     * 返り値は、まだ動いている時にtrueを返す*/
-    public bool Move(Vector3 goalPosition) {
-        Vector3 direction = goalPosition - characterPose.position;
-        bool ret = true;
-        float nowTime = Time.timeSinceLevelLoad;
-        float maxLen = speed * (nowTime - pastTime);    // 移動の最大距離
-        pastTime = nowTime;     // もうpastTimeは使わないので時間の更新
-
-        if (direction.magnitude > maxLen) {
-            characterPose.position = characterPose.position + (direction.normalized * maxLen);   // 仮の新しい位置
-        } else {
-            //速度よりも小さい時その場所にセットして終了
-            characterPose.position = goalPosition;   // 仮の新しい位置
-            ret = false;
-
-            //動作終了の処理
-
-        }
-
-        /* 以下回転 */
-        direction.y = 0;    // 上下方向には回転しない
-        characterPose.rotation = Quaternion.LookRotation(direction);
-
-        return ret;
+    /* 目的地に着いた時に呼び出される。
+     * 目的地についていなくても強制的に動作終了 */
+    public void WalkEnd() {
+        nowCharacter.WalkEnd();
+        walk = false;
     }
 
 
